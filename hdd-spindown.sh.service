@@ -1,0 +1,9 @@
+[Unit]
+Description=Automatic Disk Standby using Kernel diskstats and hdparm
+
+[Service]
+Type=simple
+ExecStart=hdd-spindown.sh
+
+[Install]
+WantedBy=multi-user.target
