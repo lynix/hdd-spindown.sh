@@ -45,7 +45,7 @@ the disks to monitor. An example may look like this:
   features a list of devices to monitor, as well as their timeout value in
   seconds, separated by the pipe symbol '|'.
   
-  Note that devices may be specified using their UUID (as shown) or node
+  Note that devices may be specified using their ID (as shown) or device
   name (e.g. 'sda'). The interval option may be omitted, which sets the
   default interval of 5 minutes.
 
