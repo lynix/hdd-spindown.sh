@@ -24,10 +24,15 @@ function check_req() {
 }
 
 function log() {
-	logger -t "hdd-spindown.sh" --id=$$ "$1"
+	if [ $LOG_SYSLOG -eq 1 ]; then
+		logger -t "hdd-spindown.sh" --id=$$ "$1"
+	else
+		echo "$1"
+	fi
 }
 
 function selftest_active() {
+	which smartctl &>/dev/null || return 0
 	smartctl -a "/dev/$1" | grep -q "Self-test routine in progress"
 	return $?
 }
@@ -74,8 +79,13 @@ function check_dev() {
 }
 
 
+# parse cmdline arguments
+LOG_SYSLOG=0
+[ "$1" == "--syslog" ] && LOG_SYSLOG=1
+
 # check prerequisites
-check_req date awk hdparm smartctl logger
+check_req date awk hdparm
+[ $LOG_SYSLOG -eq 1 ] && check_req logger
 
 # check config file
 if ! [ -r "$CONFIG" ]; then

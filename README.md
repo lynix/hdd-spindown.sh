@@ -1,5 +1,7 @@
 # hdd-spindown.sh
+
 Automatic Disk Standby using Kernel diskstats and hdparm
+
 
 ## Summary
 
@@ -24,7 +26,7 @@ The following utilities are required:
  * **date**
  * **awk:** for parsing Kernel disk stats
  * **hdparm:** for actually initiating drive standby
- * **logger:** as logging interface
+ * **logger:** as logging interface *(only if not started via systemd)*
  * **smartctl:** for detection of SMART health-checks *(optional)*
 
 
@@ -41,13 +43,17 @@ the disks to monitor. An example may look like this:
                "ata-WDC_WD20EARS-00MVWB0_WD-WCAZA5755786|5400" \
                "ata-WDC_WD20EARS-00MVWB0_WD-WMAZA3570471|5400" )
   
-  `CONF_INT` specifies the monitoring interval in seconds while `CONF_DEV`
-  features a list of devices to monitor, as well as their timeout value in
-  seconds, separated by the pipe symbol '|'.
-  
-  Note that devices may be specified using their ID (as shown) or device
-  name (e.g. 'sda'). The interval option may be omitted, which sets the
-  default interval of 5 minutes.
+`CONF_INT` specifies the monitoring interval in seconds while `CONF_DEV`
+features a list of devices to monitor, as well as their timeout value in
+seconds, separated by the pipe symbol '|'.
+
+Note that devices may be specified using their ID (as shown) or device
+name (e.g. 'sda'). The interval option may be omitted, which sets the
+default interval of 5 minutes.
+
+To enable logging to syslog (when not starting via systemd), supply
+`--syslog`.
+
 
 ## License
 
