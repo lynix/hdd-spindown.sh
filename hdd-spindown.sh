@@ -41,6 +41,23 @@ function dev_stats() {
 	awk '{printf "%s|%s\n", $1, $5}' < "/sys/block/$1/stat"
 }	
 
+function dev_spindown() {
+	# omit spindown if SMART Self-Test in progress
+	selftest_active "$1" && return 0
+
+	# spindown if active
+	if hdparm -C "/dev/$1" | grep -q active; then
+		log "suspending $1"
+		hdparm -qy "/dev/$1"
+		if [ $? -gt 0 ]; then
+			log "failed to suspend $1"
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
 function check_dev() {
 	NUM=$1
 
@@ -61,16 +78,8 @@ function check_dev() {
 	COUNT_NEW="$(dev_stats "$DEV")"
 	if [ "${COUNT[$NUM]}" == "$COUNT_NEW" ]; then
 		if [ $(($(date +%s) - ${STAMP[$NUM]})) -ge ${TIMEOUT[$NUM]} ]; then
-			# omit spindown if SMART Self-Test in progress
-			selftest_active "$DEV" && return 0
-			if hdparm -C "/dev/$DEV" | grep -q active; then
-				log "suspending $DEV"
-				hdparm -qy "/dev/$DEV"
-				if [ $? -gt 0 ]; then
-					log "failed to suspend $DEV"
-					return 1
-				fi
-			fi
+			# spindown disk
+			dev_spindown "$DEV"
 		fi
 	else
 		COUNT[$NUM]="$COUNT_NEW"
