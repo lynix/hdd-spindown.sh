@@ -77,6 +77,7 @@ function dev_spinup() {
 function check_dev() {
 	NUM=$1
 
+	# initialize real device name
 	DEV="${DEVICES[$NUM]}"
 	if ! [ -e "/dev/$DEV" ]; then
 		if [ -L "/dev/disk/by-id/$DEV" ]; then
@@ -88,16 +89,20 @@ function check_dev() {
 			return 1
 		fi
 	fi
-		
+	
+	# initialize r/w timestamp
 	[ -z "${STAMP[$NUM]}" ] && STAMP[$NUM]=$(date +%s)
 
+	# refresh r/w stats
 	COUNT_NEW="$(dev_stats "$DEV")"
 	if [ "${COUNT[$NUM]}" == "$COUNT_NEW" ]; then
+		# check against idle timeout
 		if [ $(($(date +%s) - ${STAMP[$NUM]})) -ge ${TIMEOUT[$NUM]} ]; then
 			# spindown disk
 			dev_spindown "$DEV"
 		fi
 	else
+		# update r/w timestamp
 		COUNT[$NUM]="$COUNT_NEW"
 		STAMP[$NUM]=$(date +%s)
 	fi
