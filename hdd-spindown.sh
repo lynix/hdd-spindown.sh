@@ -39,20 +39,26 @@ function selftest_active() {
 
 function dev_stats() {
 	awk '{printf "%s|%s\n", $1, $5}' < "/sys/block/$1/stat"
-}	
+}
+
+function dev_isup() {
+	hdparm -C "/dev/$1" | grep -q active
+	return $?
+}
 
 function dev_spindown() {
+	# skip spindown if already spun down
+	dev_isup "$1" || return 0
+
 	# omit spindown if SMART Self-Test in progress
 	selftest_active "$1" && return 0
 
-	# spindown if active
-	if hdparm -C "/dev/$1" | grep -q active; then
-		log "suspending $1"
-		hdparm -qy "/dev/$1"
-		if [ $? -gt 0 ]; then
-			log "failed to suspend $1"
-			return 1
-		fi
+	# spindown disk
+	log "suspending $1"
+	hdparm -qy "/dev/$1"
+	if [ $? -gt 0 ]; then
+		log "failed to suspend $1"
+		return 1
 	fi
 
 	return 0
