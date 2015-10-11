@@ -72,7 +72,7 @@ function dev_spinup() {
 
 	# read raw blocks, bypassing cache
 	log "spinning up $1"
-	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct
+	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct &>/dev/null
 }
 
 function user_present() {
