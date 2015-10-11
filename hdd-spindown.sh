@@ -135,7 +135,7 @@ LOG_SYSLOG=0
 [ "$1" == "--syslog" ] && LOG_SYSLOG=1
 
 # check prerequisites
-check_req date awk hdparm
+check_req date awk hdparm dd
 [ $LOG_SYSLOG -eq 1 ] && check_req logger
 
 # check config file
