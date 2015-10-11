@@ -75,6 +75,18 @@ function dev_spinup() {
 	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct
 }
 
+function user_present() {
+	# assume absent if no hosts defined, match unconfigured behaviour
+	[ -z "$USER_HOSTS" ] && return 1
+
+	# assume present if any user host is ping'able
+	for H in "${USER_HOSTS[@]}"; do
+		ping -c 1 -q "$H" &>/dev/null && return 0
+	done
+
+	return 1
+}
+
 function check_dev() {
 	NUM=$1
 
@@ -96,6 +108,14 @@ function check_dev() {
 
 	# refresh r/w stats
 	COUNT_NEW="$(dev_stats "$DEV")"
+
+	# check for user presence, spin up if required
+	if user_present; then
+		dev_isup "$DEV" || dev_spinup "$DEV"
+		return 0
+	fi
+
+	# spindown logic if stats equal previous recordings
 	if [ "${COUNT[$NUM]}" == "$COUNT_NEW" ]; then
 		# check against idle timeout
 		if [ $(($(date +%s) - ${STAMP[$NUM]})) -ge ${TIMEOUT[$NUM]} ]; then
