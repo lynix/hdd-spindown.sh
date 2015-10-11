@@ -11,6 +11,8 @@ CONFIG="/etc/hdd-spindown.rc"
 
 # default setting for watch interval: 300s
 INTERV=${CONF_INT:-300}
+# default setting for spinup read size: 128MiB
+SPINUP_MB=${SPINUP_READLEN:-128}
 
 
 function check_req() {
@@ -62,6 +64,14 @@ function dev_spindown() {
 	fi
 
 	return 0
+}
+
+function dev_spinup() {
+	# skip spinup if already online
+	dev_isup "$1" && return 0
+
+	# read raw blocks, bypassing cache
+	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct
 }
 
 function check_dev() {
