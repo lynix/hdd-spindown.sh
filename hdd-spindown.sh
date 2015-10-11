@@ -71,6 +71,7 @@ function dev_spinup() {
 	dev_isup "$1" && return 0
 
 	# read raw blocks, bypassing cache
+	log "spinning up $1"
 	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct
 }
 
