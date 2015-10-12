@@ -14,6 +14,9 @@ INTERV=${CONF_INT:-300}
 # default setting for spinup read size: 128MiB
 SPINUP_MB=${SPINUP_READLEN:-128}
 
+# user presence
+USER_PRESENT=0
+
 
 function check_req() {
 	FAIL=0
@@ -75,16 +78,28 @@ function dev_spinup() {
 	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct &>/dev/null
 }
 
-function user_present() {
-	# assume absent if no hosts defined, match unconfigured behaviour
-	[ -z "$USER_HOSTS" ] && return 1
+function update_presence() {
+	# no action if no hosts defined, match unconfigured behaviour
+	[ -z "$USER_HOSTS" ] && return 0
 
 	# assume present if any user host is ping'able
 	for H in "${USER_HOSTS[@]}"; do
-		ping -c 1 -q "$H" &>/dev/null && return 0
+		if ping -c 1 -q "$H" &>/dev/null; then
+			if [ $USER_PRESENT -eq 0 ]; then
+				log "user now present"
+				USER_PRESENT=1
+			fi
+			return 0
+		fi
 	done
 
-	return 1
+	# absent
+	if [ $USER_PRESENT -eq 1 ]; then
+		log "user now absent"
+		USER_PRESENT=0
+	fi
+
+	return 0
 }
 
 function check_dev() {
@@ -106,21 +121,23 @@ function check_dev() {
 	# initialize r/w timestamp
 	[ -z "${STAMP[$NUM]}" ] && STAMP[$NUM]=$(date +%s)
 
+	# check for user presence, spin up if required
+	if [ $USER_PRESENT -eq 1 ]; then
+		dev_isup "$DEV" || dev_spinup "$DEV"
+	fi
+
 	# refresh r/w stats
 	COUNT_NEW="$(dev_stats "$DEV")"
 
-	# check for user presence, spin up if required
-	if user_present; then
-		dev_isup "$DEV" || dev_spinup "$DEV"
-		return 0
-	fi
-
 	# spindown logic if stats equal previous recordings
 	if [ "${COUNT[$NUM]}" == "$COUNT_NEW" ]; then
-		# check against idle timeout
-		if [ $(($(date +%s) - ${STAMP[$NUM]})) -ge ${TIMEOUT[$NUM]} ]; then
-			# spindown disk
-			dev_spindown "$DEV"
+		# skip spindown if user present
+		if [ $USER_PRESENT -eq 0 ]; then
+			# check against idle timeout
+			if [ $(($(date +%s) - ${STAMP[$NUM]})) -ge ${TIMEOUT[$NUM]} ]; then
+				# spindown disk
+				dev_spindown "$DEV"
+			fi
 		fi
 	else
 		# update r/w timestamp
@@ -159,6 +176,7 @@ done
 
 # main loop
 while true; do
+	update_presence
 	for I in $(seq 0 $I_MAX); do
 		check_dev $I
 	done
