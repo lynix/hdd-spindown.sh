@@ -15,7 +15,7 @@ standby for drives that do not support timeout-based spindown by firmware
 **hdd-spindown.sh** is best run via systemd, using the service unit provided.
 In order to enable it, simply issue
 
-    $ systemctl enable hdd-spindown.sh.service
+    $ systemctl enable hdd-spindown.service
 
 and create a configuration file as described in the following section.
 
