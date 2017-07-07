@@ -1,0 +1,22 @@
+# Configuration file for 'hdd-spindown.sh'
+
+# Devices to be monitored
+# 	Node names (e.g. 'sda') or ATA-IDs, timeout in seconds
+#
+#CONF_DEV=( 'sda|3600' \
+#			'sdb|3600' ) 
+
+# Hosts to monitor for 'presence' feature
+#CONF_HOSTS=( )
+
+# Monitoring interval in seconds
+#CONF_INT=300
+
+# Syslog usage
+#CONF_SYSLOG=0
+
+# Spinup read length in MiB
+#CONF_READLEN=128
+
+
+# vim: ts=4
