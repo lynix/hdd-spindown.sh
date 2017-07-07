@@ -1,9 +1,11 @@
 #!/bin/bash
 
-#                            hdd-spindown.sh
+# hdd-spindown.sh
+# ---------------
+# Automatic Disk Standby Using Kernel Diskstats and hdparm
+# (C) 2011-2017 Alexander Koch <mail@alexanderkoch.net>
 #
-#        Automatic Disk Standby using Kernel diskstats and hdparm
-#             2011-2015 by Alexander Koch <lynix47@gmail.com>
+# Released under the terms of the MIT License, see 'LICENSE'
 
 
 # configuration file, (ba)sh-style
