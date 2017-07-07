@@ -17,17 +17,13 @@ In order to enable it, simply issue
 
     $ systemctl enable hdd-spindown.service
 
-and create a configuration file as described in the following section.
+and adapt configuration file `/etc/hdd-spindown.rc` to suit your needs.
 
-Logging output is performed via `logger`, which makes it compatible with
-traditional *syslog-ng* and *journald* systems.
-
-The following utilities are required:
- * **date**
- * **awk:** for parsing Kernel disk stats
- * **hdparm:** for actually initiating drive standby
- * **logger:** as logging interface *(only if not started via systemd)*
- * **smartctl:** for detection of SMART health-checks *(optional)*
+Apart from *coreutils* the following is required:
+ * **hdparm** for actually initiating drive standby
+ * **logger** (optional), if syslog interface enabled
+ * **ping** (optional), if host monitoring enabled
+ * **smartctl:** (optional) for detection of SMART self-checks
 
 
 ## Configuration
@@ -38,6 +34,7 @@ the disks to monitor. An example may look like this:
     # configuration file for hdd-spindown.sh
     
     CONF_INT=300
+    
     CONF_DEV=( "ata-WDC_WD50EFRX-68MYMN1_WD-WX31DA43KKCY|5400" \
                "ata-WDC_WD50EFRX-68MYMN1_WD-WX81DA4HNEH5|5400" \
                "ata-WDC_WD20EARS-00MVWB0_WD-WCAZA5755786|5400" \
@@ -51,8 +48,7 @@ Note that devices may be specified using their ID (as shown) or device
 name (e.g. 'sda'). The interval option may be omitted, which sets the
 default interval of 5 minutes.
 
-To enable logging to syslog (when not starting via systemd), supply
-`--syslog`.
+For a complete list of options please see the example `hdd-spindown.rc`.
 
 
 ## License
