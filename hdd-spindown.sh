@@ -8,16 +8,8 @@
 # Released under the terms of the MIT License, see 'LICENSE'
 
 
-# configuration file, (ba)sh-style
-CONFIG="/etc/hdd-spindown.rc"
-
-# default setting for watch interval: 300s
-INTERV=${CONF_INT:-300}
-# default setting for spinup read size: 128MiB
-SPINUP_MB=${SPINUP_READLEN:-128}
-
-# user presence
-USER_PRESENT=0
+# default configuration file
+readonly CONFIG="${CONFIG:-/etc/hdd-spindown.rc}"
 
 
 function check_req() {
@@ -31,7 +23,7 @@ function check_req() {
 }
 
 function log() {
-	if [ $LOG_SYSLOG -eq 1 ]; then
+	if [ $CONF_SYSLOG -eq 1 ]; then
 		logger -t "hdd-spindown.sh" --id=$$ "$1"
 	else
 		echo "$1"
@@ -77,15 +69,15 @@ function dev_spinup() {
 
 	# read raw blocks, bypassing cache
 	log "spinning up $1"
-	dd if=/dev/$1 of=/dev/null bs=1M count=$SPINUP_MB iflag=direct &>/dev/null
+	dd if=/dev/$1 of=/dev/null bs=1M count=$CONF_READLEN iflag=direct &>/dev/null
 }
 
 function update_presence() {
-	# no action if no hosts defined, match unconfigured behaviour
-	[ -z "$USER_HOSTS" ] && return 0
+	# no action if no hosts defined
+	[ -z "$CONF_HOSTS" ] && return 0
 
-	# assume present if any user host is ping'able
-	for H in "${USER_HOSTS[@]}"; do
+	# assume present if any host is ping'able
+	for H in "${CONF_HOSTS[@]}"; do
 		if ping -c 1 -q "$H" &>/dev/null; then
 			if [ $USER_PRESENT -eq 0 ]; then
 				log "active host detected ($H)"
@@ -105,23 +97,21 @@ function update_presence() {
 }
 
 function check_dev() {
-	NUM=$1
-
 	# initialize real device name
-	DEV="${DEVICES[$NUM]}"
+	DEV="${DEVICES[$1]}"
 	if ! [ -e "/dev/$DEV" ]; then
 		if [ -L "/dev/disk/by-id/$DEV" ]; then
 			DEV="$(basename "$(readlink "/dev/disk/by-id/$DEV")")"
-			log "recognized disk: ${DEVICES[$NUM]} --> $DEV"
-			DEVICES[$NUM]="$DEV"
+			log "recognized disk: ${DEVICES[$1]} --> $DEV"
+			DEVICES[$1]="$DEV"
 		else
-			log "device not found: $DEV, skipping"
-			return 1
+			log "error: device not found: '$DEV'" >&2
+			exit 1
 		fi
 	fi
 	
 	# initialize r/w timestamp
-	[ -z "${STAMP[$NUM]}" ] && STAMP[$NUM]=$(date +%s)
+	[ -z "${STAMP[$1]}" ] && STAMP[$1]=$(date +%s)
 
 	# check for user presence, spin up if required
 	if [ $USER_PRESENT -eq 1 ]; then
@@ -132,56 +122,66 @@ function check_dev() {
 	COUNT_NEW="$(dev_stats "$DEV")"
 
 	# spindown logic if stats equal previous recordings
-	if [ "${COUNT[$NUM]}" == "$COUNT_NEW" ]; then
+	if [ "${COUNT[$1]}" == "$COUNT_NEW" ]; then
 		# skip spindown if user present
 		if [ $USER_PRESENT -eq 0 ]; then
 			# check against idle timeout
-			if [ $(($(date +%s) - ${STAMP[$NUM]})) -ge ${TIMEOUT[$NUM]} ]; then
+			if [ $(($(date +%s) - ${STAMP[$1]})) -ge ${TIMEOUT[$1]} ]; then
 				# spindown disk
 				dev_spindown "$DEV"
 			fi
 		fi
 	else
 		# update r/w timestamp
-		COUNT[$NUM]="$COUNT_NEW"
-		STAMP[$NUM]=$(date +%s)
+		COUNT[$1]="$COUNT_NEW"
+		STAMP[$1]=$(date +%s)
 	fi
 }
 
 
-# parse cmdline arguments
-LOG_SYSLOG=0
-[ "$1" == "--syslog" ] && LOG_SYSLOG=1
-
-# check prerequisites
-check_req date awk hdparm dd
-[ $LOG_SYSLOG -eq 1 ] && check_req logger
-
-# check config file
+# read config file
 if ! [ -r "$CONFIG" ]; then
 	echo "error: unable to read config file '$CONFIG', aborting." >&2
 	exit 1
+else
+    source "$CONFIG"
 fi
-source "$CONFIG"
+
+# default watch interval: 300s
+readonly CONF_INT=${CONF_INT:-300}
+# default spinup read size: 128MiB
+readonly CONF_READLEN=${CONF_READLEN:-128}
+# default syslog usage: disabled
+readonly CONF_SYSLOG=${CONF_SYSLOG:-0}
+
+# check prerequisites
+check_req date hdparm dd cut tr
+[ -n "$CONF_HOSTS" ] && check_req ping
+[ $CONF_SYSLOG -eq 1 ] && check_req logger
+
+# refuse to work without disks defined
 if [ -z "$CONF_DEV" ]; then
-	echo "error: missing configuration parameter 'CONFIG_DEV', aborting."
+	echo "error: missing configuration parameter 'CONF_DEV', aborting." >&2
 	exit 1
 fi
 
 # initialize device arrays
-I_MAX=$((${#CONF_DEV[@]} - 1))
-for I in $(seq 0 $I_MAX); do
+DEV_MAX=$((${#CONF_DEV[@]} - 1))
+for I in $(seq 0 $DEV_MAX); do
 	DEVICES[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 1)"
 	TIMEOUT[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 2)"
 done
 
 
-# main loop
+USER_PRESENT=1
+log "Using ${CONF_INT}s interval"
+
 while true; do
 	update_presence
-	for I in $(seq 0 $I_MAX); do
+
+	for I in $(seq 0 $DEV_MAX); do
 		check_dev $I
 	done
 
-	sleep $INTERV
+	sleep $CONF_INT
 done
