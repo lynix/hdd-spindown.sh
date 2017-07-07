@@ -45,7 +45,7 @@ function selftest_active() {
 }
 
 function dev_stats() {
-	awk '{printf "%s|%s\n", $1, $5}' < "/sys/block/$1/stat"
+	tr -s ' ' < "/sys/block/$1/stat" | cut -d ' ' -f 2,6
 }
 
 function dev_isup() {
