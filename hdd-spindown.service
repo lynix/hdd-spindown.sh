@@ -1,5 +1,5 @@
 [Unit]
-Description=Automatic Disk Standby using Kernel diskstats and hdparm
+Description=Automatic Disk Standby
 
 [Service]
 Type=simple
