@@ -23,8 +23,8 @@ USER_PRESENT=0
 function check_req() {
 	FAIL=0
 	for CMD in $@; do
-		which $CMD >/dev/null && continue
-		echo "error: unable to execute: '$CMD'"
+		which $CMD &>/dev/null && continue
+		echo "error: missing '$CMD' executable in PATH" >&2
 		FAIL=1
 	done
 	[ $FAIL -ne 0 ] && exit 1
@@ -88,7 +88,7 @@ function update_presence() {
 	for H in "${USER_HOSTS[@]}"; do
 		if ping -c 1 -q "$H" &>/dev/null; then
 			if [ $USER_PRESENT -eq 0 ]; then
-				log "user now present"
+				log "active host detected ($H)"
 				USER_PRESENT=1
 			fi
 			return 0
@@ -97,7 +97,7 @@ function update_presence() {
 
 	# absent
 	if [ $USER_PRESENT -eq 1 ]; then
-		log "user now absent"
+		log "all hosts inactive"
 		USER_PRESENT=0
 	fi
 
@@ -159,7 +159,7 @@ check_req date awk hdparm dd
 
 # check config file
 if ! [ -r "$CONFIG" ]; then
-	echo "error: unable to read config file '$CONFIG', aborting."
+	echo "error: unable to read config file '$CONFIG', aborting." >&2
 	exit 1
 fi
 source "$CONFIG"
