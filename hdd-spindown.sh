@@ -173,7 +173,7 @@ for I in $(seq 0 $DEV_MAX); do
 done
 
 
-USER_PRESENT=1
+USER_PRESENT=0
 log "Using ${CONF_INT}s interval"
 
 while true; do
