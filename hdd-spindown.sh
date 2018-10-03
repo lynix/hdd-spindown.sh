@@ -106,8 +106,8 @@ function check_dev() {
 			log "recognized disk: ${DEVICES[$1]} --> $DEV"
 			DEVICES[$1]="$DEV"
 		else
-			log "error: device not found: '$DEV'" >&2
-			exit 1
+			log "skipping missing device '$DEV'" >&2
+			return 0
 		fi
 	fi
 	
