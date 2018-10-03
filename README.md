@@ -22,9 +22,11 @@ and adapt configuration file `/etc/hdd-spindown.rc` to suit your needs.
 Apart from *coreutils* the following is required:
  * **hdparm** for actually initiating drive standby
  * **grep** for utility output parsing
- * **logger** (optional), if syslog interface enabled
- * **ping** (optional), if host monitoring enabled
- * **smartctl:** (optional) for detection of SMART self-checks
+
+The following is optional, depending on the features used:
+ * **logger** if syslog interface enabled
+ * **ping** if host monitoring enabled
+ * **smartctl:** for detection of SMART self-checks
 
 
 ## Configuration
