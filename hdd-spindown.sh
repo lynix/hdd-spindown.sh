@@ -37,7 +37,8 @@ function selftest_active() {
 }
 
 function dev_stats() {
-	tr -s ' ' < "/sys/block/$1/stat" | cut -d ' ' -f 2,6
+	read R_IO R_M R_S R_T W_IO REST < "/sys/block/$1/stat"
+	echo "$R_IO $W_IO"
 }
 
 function dev_isup() {
@@ -155,7 +156,7 @@ readonly CONF_READLEN=${CONF_READLEN:-128}
 readonly CONF_SYSLOG=${CONF_SYSLOG:-0}
 
 # check prerequisites
-check_req date hdparm dd cut tr grep
+check_req date hdparm dd cut grep
 [ -n "$CONF_HOSTS" ] && check_req ping
 [ $CONF_SYSLOG -eq 1 ] && check_req logger
 
