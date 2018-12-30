@@ -42,7 +42,7 @@ function dev_stats() {
 }
 
 function dev_isup() {
-	hdparm -C "/dev/$1" | grep -q active
+	smartctl -i -n standby "/dev/$1" | grep -q ACTIVE
 	return $?
 }
 
