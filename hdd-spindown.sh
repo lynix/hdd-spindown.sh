@@ -31,7 +31,6 @@ function log() {
 }
 
 function selftest_active() {
-	which smartctl &>/dev/null || return 0
 	smartctl -a "/dev/$1" | grep -q "Self-test routine in progress"
 	return $?
 }
@@ -156,7 +155,7 @@ readonly CONF_READLEN=${CONF_READLEN:-128}
 readonly CONF_SYSLOG=${CONF_SYSLOG:-0}
 
 # check prerequisites
-check_req date hdparm dd cut grep
+check_req date hdparm smartctl dd cut grep
 [ -n "$CONF_HOSTS" ] && check_req ping
 [ $CONF_SYSLOG -eq 1 ] && check_req logger
 
