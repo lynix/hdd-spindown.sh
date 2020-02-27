@@ -120,18 +120,26 @@ function check_dev() {
 
 	# refresh r/w stats
 	COUNT_NEW="$(dev_stats "$DEV")"
+	log "debug: $DEV: old ${COUNT[$1]}, new $COUNT_NEW"
 
 	# spindown logic if stats equal previous recordings
 	if [ "${COUNT[$1]}" == "$COUNT_NEW" ]; then
+		log "debug: $DEV: no I/O detected"
 		# skip spindown if user present
 		if [ $USER_PRESENT -eq 0 ]; then
 			# check against idle timeout
 			if [ $(($(date +%s) - ${STAMP[$1]})) -ge ${TIMEOUT[$1]} ]; then
 				# spindown disk
+				log "debug: $DEV: trying to suspend"
 				dev_spindown "$DEV"
+			else
+				log "debug: $DEV: timeout not reached"
 			fi
+		else
+			log "debug: $DEV: skipping timeout check due to user presence"
 		fi
 	else
+		log "debug: $DEV: I/O detected, updating counters"
 		# update r/w timestamp
 		COUNT[$1]="$COUNT_NEW"
 		STAMP[$1]=$(date +%s)
