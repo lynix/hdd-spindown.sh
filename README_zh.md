@@ -17,7 +17,7 @@
 
 并修改配置文件 `/etc/hdd-spindown.rc` 去满足您的需求.
 
-除* coreutils *外，还需要：
+除 *coreutils* 外，还需要：
  * **smartctl:** 用于检测驱动器状态和SMART自检
  * **hdparm** 用于实际启动驱动器待机
  * **grep** 用于实用程序输出解析
