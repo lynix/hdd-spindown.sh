@@ -51,6 +51,20 @@
 
 有关选项的完整列表，请参见示例 `hdd-spindown.rc`.
 
+## 安装方法 by broizter
+sudo apt install git smartmontools hdparm
+git clone https://github.com/lynix/hdd-spindown.sh
+cd hdd-spindown.sh
+sudo mv hdd-spindown.sh /usr/bin/
+sudo mv hdd-spindown.service /etc/systemd/system/
+sudo mv hdd-spindown.rc /etc/
+sudo chown root:root /usr/bin/hdd-spindown.sh
+sudo chown root:root /etc/systemd/system/hdd-spindown.service
+sudo chown root:root /etc/hdd-spindown.rc
+sudo chmod +x /usr/bin/hdd-spindown.sh
+sudo nano /etc/hdd-spindown.rc (edit the config to reflect your setup)
+sudo systemctl daemon-reload
+sudo systemctl enable --now hdd-spindown
 
 ## License
 
