@@ -1,5 +1,7 @@
 # hdd-spindown.sh
 
+[README](README.md) | [中文文档](README_zh.md)
+
 使用hdparm和内核diskstats的自动磁盘待机工具
 
 ## 摘要
