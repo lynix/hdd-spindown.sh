@@ -54,6 +54,13 @@ default interval of 5 minutes.
 For a complete list of options please see the example `hdd-spindown.rc`.
 
 
+## State of Development
+
+I have replaced all of my rotating disks with flash based storage. I will
+happily accept pull requests for improvements or bug fixes, but I will not be
+able to test anything myself.
+
+
 ## License
 
 This software is released under the terms of the MIT License, see file
