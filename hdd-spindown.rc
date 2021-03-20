@@ -18,5 +18,8 @@
 # Spinup read length in MiB
 #CONF_READLEN=128
 
+# Force SATA device type
+#CONF_FORCE_SATA=0
+
 
 # vim: ts=4

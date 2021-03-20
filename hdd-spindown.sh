@@ -3,7 +3,7 @@
 # hdd-spindown.sh
 # ---------------
 # Automatic Disk Standby Using Kernel Diskstats and hdparm
-# (C) 2011-2017 Alexander Koch <mail@alexanderkoch.net>
+# (C) 2011-2021 Alexander Koch <mail@alexanderkoch.net>
 #
 # Released under the terms of the MIT License, see 'LICENSE'
 
@@ -31,7 +31,7 @@ function log() {
 }
 
 function selftest_active() {
-	smartctl -a "/dev/$1" | grep -q "Self-test routine in progress"
+	$SMARTCTL -a "/dev/$1" | grep -q "Self-test routine in progress"
 	return $?
 }
 
@@ -41,7 +41,7 @@ function dev_stats() {
 }
 
 function dev_isup() {
-	smartctl -i -n standby "/dev/$1" | grep -q ACTIVE
+	$SMARTCTL -i -n standby "/dev/$1" | grep -q ACTIVE
 	return $?
 }
 
@@ -153,11 +153,17 @@ readonly CONF_INT=${CONF_INT:-300}
 readonly CONF_READLEN=${CONF_READLEN:-128}
 # default syslog usage: disabled
 readonly CONF_SYSLOG=${CONF_SYSLOG:-0}
+# default force SATA device type: disabled
+readonly CONF_FORCE_SATA=${CONF_FORCE_SATA:-0}
 
 # check prerequisites
 check_req date hdparm smartctl dd cut grep
 [ -n "$CONF_HOSTS" ] && check_req ping
 [ $CONF_SYSLOG -eq 1 ] && check_req logger
+
+# pre-set smartctl call
+[ $CONF_FORCE_SATA -eq 1 ] && SMARTCTL=" -d sat"
+readonly SMARTCTL="smartctl${SMARTCTL}"
 
 # refuse to work without disks defined
 if [ -z "$CONF_DEV" ]; then
