@@ -40,12 +40,25 @@ function dev_stats() {
 	echo "$R_IO $W_IO"
 }
 
+function all_stats() {
+	ALL_STATS=()
+	while read MAJ MIN DEV R_IO R_M R_S R_T W_IO REST ; do
+		if [ ! -z "$DEV" ]; then
+			log "$DEV $R_IO $R_M"
+			ALL_STATS[$DEV]="$R_IO $W_IO"
+		else
+			log "Line empty!?"
+		fi
+	done < "/proc/diskstats"
+}
+
 function dev_isup() {
 	$SMARTCTL -i -n standby "/dev/$1" | grep -q ACTIVE
 	return $?
 }
 
 function dev_spindown() {
+	# log "trying to suspend $1"
 	# skip spindown if already spun down
 	dev_isup "$1" || return 0
 
@@ -119,10 +132,40 @@ function check_dev() {
 	fi
 
 	# refresh r/w stats
-	COUNT_NEW="$(dev_stats "$DEV")"
+	COUNT_NEW="${ALL_STATS[$DEV]}"
+
+	# check partitions
+	if [ -n "${PARTITIONS[$1]}" ]; then
+		DONT_SPINDOWN[$1]=0
+
+		IFS='|' read -ra PART <<< "${PARTITIONS[$1]}"
+		for part in "${PART[@]}"; do
+			# log "part processing: $part"
+			# log "  prevent spindown ${DONT_SPINDOWN[$1]}"
+			# log "  count old ${COUNT_PART[$part]}"
+			# log "  count new ${ALL_STATS[$part]}"
+
+			if [ "${COUNT_PART[$part]}" == "${ALL_STATS[$part]}" ]; then
+				# partition stats did not change
+				# log "  partition $part stats did not change"
+				:
+			else
+				# log "  partition $part DID change"
+				# update r/w stamp for partition
+				COUNT_PART[$part]="${ALL_STATS[$part]}"
+				# dont spindown now
+				DONT_SPINDOWN[$1]=1
+			fi
+		  # log "  count old ${COUNT_PART[$part]}"
+		  # log "  prevent spindown ${DONT_SPINDOWN[$1]}"
+		done
+	fi
 
 	# spindown logic if stats equal previous recordings
-	if [ "${COUNT[$1]}" == "$COUNT_NEW" ]; then
+
+	log "$DEV - ${COUNT[$1]} $COUNT_NEW - ${DONT_SPINDOWN[$1]}"
+	if [ "${COUNT[$1]}" == "$COUNT_NEW" ] || [ "${DONT_SPINDOWN[$1]}" == 0 ]; then
+		# log "ready to spindown $DEV, in theory... in theory, communism works"
 		# skip spindown if user present
 		if [ $USER_PRESENT -eq 0 ]; then
 			# check against idle timeout
@@ -171,11 +214,15 @@ if [ -z "$CONF_DEV" ]; then
 	exit 1
 fi
 
+declare -A COUNT_PART
+declare -A ALL_STATS
+
 # initialize device arrays
 DEV_MAX=$((${#CONF_DEV[@]} - 1))
 for I in $(seq 0 $DEV_MAX); do
 	DEVICES[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 1)"
 	TIMEOUT[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 2)"
+	PARTITIONS[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 3-)"
 done
 
 
@@ -185,6 +232,7 @@ log "Using ${CONF_INT}s interval"
 while true; do
 	update_presence
 
+	all_stats
 	for I in $(seq 0 $DEV_MAX); do
 		check_dev $I
 	done
