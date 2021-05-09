@@ -44,10 +44,8 @@ function all_stats() {
 	ALL_STATS=()
 	while read MAJ MIN DEV R_IO R_M R_S R_T W_IO REST ; do
 		if [ ! -z "$DEV" ]; then
-			log "$DEV $R_IO $R_M"
+			# log "$DEV $R_IO $R_M"
 			ALL_STATS[$DEV]="$R_IO $W_IO"
-		else
-			log "Line empty!?"
 		fi
 	done < "/proc/diskstats"
 }
@@ -58,7 +56,6 @@ function dev_isup() {
 }
 
 function dev_spindown() {
-	# log "trying to suspend $1"
 	# skip spindown if already spun down
 	dev_isup "$1" || return 0
 
@@ -122,7 +119,7 @@ function check_dev() {
 			return 0
 		fi
 	fi
-	
+
 	# initialize r/w timestamp
 	[ -z "${STAMP[$1]}" ] && STAMP[$1]=$(date +%s)
 
@@ -140,32 +137,20 @@ function check_dev() {
 
 		IFS='|' read -ra PART <<< "${PARTITIONS[$1]}"
 		for part in "${PART[@]}"; do
-			# log "part processing: $part"
-			# log "  prevent spindown ${DONT_SPINDOWN[$1]}"
-			# log "  count old ${COUNT_PART[$part]}"
-			# log "  count new ${ALL_STATS[$part]}"
-
-			if [ "${COUNT_PART[$part]}" == "${ALL_STATS[$part]}" ]; then
-				# partition stats did not change
-				# log "  partition $part stats did not change"
-				:
-			else
-				# log "  partition $part DID change"
+			if ! [ "${COUNT_PART[$part]}" == "${ALL_STATS[$part]}" ]; then
+				# log "partition $part changed"
 				# update r/w stamp for partition
 				COUNT_PART[$part]="${ALL_STATS[$part]}"
-				# dont spindown now
+				# don't spindown now
 				DONT_SPINDOWN[$1]=1
 			fi
-		  # log "  count old ${COUNT_PART[$part]}"
-		  # log "  prevent spindown ${DONT_SPINDOWN[$1]}"
 		done
 	fi
 
 	# spindown logic if stats equal previous recordings
 
-	log "$DEV - ${COUNT[$1]} $COUNT_NEW - ${DONT_SPINDOWN[$1]}"
+	# log "$DEV - ${COUNT[$1]} $COUNT_NEW - ${DONT_SPINDOWN[$1]}"
 	if [ "${COUNT[$1]}" == "$COUNT_NEW" ] || [ "${DONT_SPINDOWN[$1]}" == 0 ]; then
-		# log "ready to spindown $DEV, in theory... in theory, communism works"
 		# skip spindown if user present
 		if [ $USER_PRESENT -eq 0 ]; then
 			# check against idle timeout
