@@ -35,11 +35,6 @@ function selftest_active() {
 	return $?
 }
 
-function dev_stats() {
-	read R_IO R_M R_S R_T W_IO REST < "/sys/block/$1/stat"
-	echo "$R_IO $W_IO"
-}
-
 function all_stats() {
 	ALL_STATS=()
 	while read MAJ MIN DEV R_IO R_M R_S R_T W_IO REST ; do
