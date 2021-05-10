@@ -51,7 +51,7 @@ Note that devices may be specified using their ID (as shown) or device
 name (e.g. 'sda'). The interval option may be omitted, which sets the
 default interval of 5 minutes.
 
-Newer kernels (>5.5) need the partitions of the device listed separately,
+Newer kernels (>5.4) need the partitions of the device listed separately,
 since only checking the disk stats will prevent spindown. Partitions have
 to be separated by the pipe symbol '|'.
 
