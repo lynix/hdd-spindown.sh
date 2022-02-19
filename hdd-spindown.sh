@@ -35,6 +35,45 @@ function selftest_active() {
 	return $?
 }
 
+function get_uuids() {
+	UUIDS=()
+	while read BLKID UUID ; do
+		if [ ! -z "$UUID" ]; then
+			UUIDS["$BLKID"]="$UUID"
+		fi
+	done < <(lsblk --noheadings --raw --output NAME,UUID)
+}
+
+function map_blkid_uuid() {
+	blk="$1"
+	for blkid in "${!UUIDS[@]}"; do
+		if [ "$blk" == "${UUIDS[$blkid]}" ]; then
+			log "found matching blkid for $blk: $blkid"
+			blk="$blkid"
+		fi
+	done
+	# log "partition: $blk"
+}
+
+function get_partitions() {
+	get_uuids
+
+	DEV_MAX=$((${#CONF_DEV[@]} - 1))
+	for I in $(seq 0 $DEV_MAX); do
+		NEW_PARTS=()
+		if [ -n "${PARTITIONS[$I]}" ]; then
+			IFS='|' read -ra PART <<< "${PARTITIONS[$I]}"
+			for part in "${PART[@]}"; do
+				map_blkid_uuid "$part"
+				NEW_PARTS+=("$blk")
+			done
+			# log "Before: ${PARTITIONS[$I]}"
+			PARTITIONS[$I]=$(IFS='|' ; echo "${NEW_PARTS[*]}")
+			# log "After: ${PARTITIONS[$I]}"
+		fi
+	done
+}
+
 function all_stats() {
 	ALL_STATS=()
 	while read MAJ MIN DEV R_IO R_M R_S R_T W_IO REST ; do
@@ -196,6 +235,7 @@ fi
 
 declare -A COUNT_PART
 declare -A ALL_STATS
+declare -A UUIDS
 
 # initialize device arrays
 DEV_MAX=$((${#CONF_DEV[@]} - 1))
@@ -205,6 +245,7 @@ for I in $(seq 0 $DEV_MAX); do
 	PARTITIONS[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 3-)"
 done
 
+get_partitions
 
 USER_PRESENT=0
 log "Using ${CONF_INT}s interval"
