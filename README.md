@@ -38,7 +38,7 @@ the disks to monitor. An example may look like this:
     
     CONF_INT=300
     
-    CONF_DEV=( "ata-WDC_WD50EFRX-68MYMN1_WD-WX31DA43KKCY|5400|sda1|sda2|sda3" \
+    CONF_DEV=( "ata-WDC_WD50EFRX-68MYMN1_WD-WX31DA43KKCY|5400|sda1|12345678-abcd-f00d-1234-1234567890ab|sda3" \
                "ata-WDC_WD50EFRX-68MYMN1_WD-WX81DA4HNEH5|5400|bcache1" \
                "ata-WDC_WD20EARS-00MVWB0_WD-WCAZA5755786|5400|sdc3" \
                "ata-WDC_WD20EARS-00MVWB0_WD-WMAZA3570471|5400" )
@@ -53,7 +53,8 @@ default interval of 5 minutes.
 
 Newer kernels (>5.4) need the partitions of the device listed separately,
 since only checking the disk stats will prevent spindown. Partitions have
-to be separated by the pipe symbol '|'.
+to be separated by the pipe symbol '|'. UUIDs can be used to specify
+partitions.
 
 For a complete list of options please see the example `hdd-spindown.rc`.
 
