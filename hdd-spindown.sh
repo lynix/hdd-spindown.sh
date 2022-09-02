@@ -41,7 +41,7 @@ function dev_stats() {
 }
 
 function dev_isup() {
-	$SMARTCTL -i -n standby "/dev/$1" | grep -q ACTIVE
+	$SMARTCTL -i -n standby "/dev/$1" | grep -q -e ACTIVE -e IDLE
 	return $?
 }
 
