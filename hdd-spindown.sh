@@ -35,9 +35,53 @@ function selftest_active() {
 	return $?
 }
 
-function dev_stats() {
-	read R_IO R_M R_S R_T W_IO REST < "/sys/block/$1/stat"
-	echo "$R_IO $W_IO"
+function get_uuids() {
+	UUIDS=()
+	while read BLKID UUID ; do
+		if [ ! -z "$UUID" ]; then
+			UUIDS["$BLKID"]="$UUID"
+		fi
+	done < <(lsblk --noheadings --raw --output NAME,UUID)
+}
+
+function map_blkid_uuid() {
+	blk="$1"
+	for blkid in "${!UUIDS[@]}"; do
+		if [ "$blk" == "${UUIDS[$blkid]}" ]; then
+			log "found matching blkid for $blk: $blkid"
+			blk="$blkid"
+		fi
+	done
+	# log "partition: $blk"
+}
+
+function get_partitions() {
+	get_uuids
+
+	DEV_MAX=$((${#CONF_DEV[@]} - 1))
+	for I in $(seq 0 $DEV_MAX); do
+		NEW_PARTS=()
+		if [ -n "${PARTITIONS[$I]}" ]; then
+			IFS='|' read -ra PART <<< "${PARTITIONS[$I]}"
+			for part in "${PART[@]}"; do
+				map_blkid_uuid "$part"
+				NEW_PARTS+=("$blk")
+			done
+			# log "Before: ${PARTITIONS[$I]}"
+			PARTITIONS[$I]=$(IFS='|' ; echo "${NEW_PARTS[*]}")
+			# log "After: ${PARTITIONS[$I]}"
+		fi
+	done
+}
+
+function all_stats() {
+	ALL_STATS=()
+	while read MAJ MIN DEV R_IO R_M R_S R_T W_IO REST ; do
+		if [ ! -z "$DEV" ]; then
+			# log "$DEV $R_IO $R_M"
+			ALL_STATS[$DEV]="$R_IO $W_IO"
+		fi
+	done < "/proc/diskstats"
 }
 
 function dev_isup() {
@@ -109,7 +153,7 @@ function check_dev() {
 			return 0
 		fi
 	fi
-	
+
 	# initialize r/w timestamp
 	[ -z "${STAMP[$1]}" ] && STAMP[$1]=$(date +%s)
 
@@ -119,10 +163,28 @@ function check_dev() {
 	fi
 
 	# refresh r/w stats
-	COUNT_NEW="$(dev_stats "$DEV")"
+	COUNT_NEW="${ALL_STATS[$DEV]}"
+
+	# check partitions
+	if [ -n "${PARTITIONS[$1]}" ]; then
+		DONT_SPINDOWN[$1]=0
+
+		IFS='|' read -ra PART <<< "${PARTITIONS[$1]}"
+		for part in "${PART[@]}"; do
+			if ! [ "${COUNT_PART[$part]}" == "${ALL_STATS[$part]}" ]; then
+				# log "partition $part changed"
+				# update r/w stamp for partition
+				COUNT_PART[$part]="${ALL_STATS[$part]}"
+				# don't spindown now
+				DONT_SPINDOWN[$1]=1
+			fi
+		done
+	fi
 
 	# spindown logic if stats equal previous recordings
-	if [ "${COUNT[$1]}" == "$COUNT_NEW" ]; then
+
+	# log "$DEV - ${COUNT[$1]} $COUNT_NEW - ${DONT_SPINDOWN[$1]}"
+	if [ "${COUNT[$1]}" == "$COUNT_NEW" ] || [ "${DONT_SPINDOWN[$1]}" == 0 ]; then
 		# skip spindown if user present
 		if [ $USER_PRESENT -eq 0 ]; then
 			# check against idle timeout
@@ -171,13 +233,19 @@ if [ -z "$CONF_DEV" ]; then
 	exit 1
 fi
 
+declare -A COUNT_PART
+declare -A ALL_STATS
+declare -A UUIDS
+
 # initialize device arrays
 DEV_MAX=$((${#CONF_DEV[@]} - 1))
 for I in $(seq 0 $DEV_MAX); do
 	DEVICES[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 1)"
 	TIMEOUT[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 2)"
+	PARTITIONS[$I]="$(echo "${CONF_DEV[$I]}" | cut -d '|' -f 3-)"
 done
 
+get_partitions
 
 USER_PRESENT=0
 log "Using ${CONF_INT}s interval"
@@ -185,6 +253,7 @@ log "Using ${CONF_INT}s interval"
 while true; do
 	update_presence
 
+	all_stats
 	for I in $(seq 0 $DEV_MAX); do
 		check_dev $I
 	done

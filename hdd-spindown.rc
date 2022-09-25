@@ -1,10 +1,10 @@
 # Configuration file for 'hdd-spindown.sh'
 
 # Devices to be monitored
-# 	Node names (e.g. 'sda') or ATA-IDs, timeout in seconds
+#	Node names (e.g. 'sda') or ATA-IDs, timeout in seconds, partitions on device (optional, needed for kernels > 5.4)
 #
-#CONF_DEV=( 'sda|3600' \
-#			'sdb|3600' ) 
+#CONF_DEV=( 'sda|3600|sda1|sda2' \
+#			'sdb|3600|bcache1' ) 
 
 # Hosts to monitor for 'presence' feature
 #CONF_HOSTS=( )
